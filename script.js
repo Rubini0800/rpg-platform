@@ -98,24 +98,52 @@ function enviarRedimensionamento(item, dados) {
     if (!item || !estaEmUmaSala()) return;
     socket.emit("redimensionar-objeto", { id: item.id, largura: dados.largura, tamanhoFt: dados.tamanhoFt });
 }
-function mostrarSala(resposta) {
+// Sessão atual da sala. Se o socket cair e reconectar, o servidor o enxerga como uma conexão NOVA,
+// fora da sala; por isso guardamos nome/código para reentrar automaticamente (ver reentrarNaSala).
+let sessaoSala = null, tentativasReentrada = 0, temporizadorReentrada = null;
+function mostrarSala(resposta, nome) {
     if (!resposta || !resposta.ok) { mensagemSala.textContent = resposta?.mensagem || "Não foi possível entrar na sala."; return; }
+    sessaoSala = { nome, codigo: resposta.codigo, papel: resposta.papel };
     mensagemSala.textContent = resposta.mensagem || "Conectado à sala! As alterações são salvas automaticamente neste computador/servidor."; painelSala.hidden = false;
     codigoExibido.textContent = resposta.codigo; papelExibido.textContent = resposta.papel; renderizarNevoa();
     campoCodigo.value = resposta.codigo; atualizarPermissoes();
 }
 el("salvarCampanhaAgora").addEventListener("click", () => socket.emit("salvar-campanha", {}, resposta => { mensagemSala.textContent = resposta?.ok ? "Campanha salva! Guarde o código da sala para continuar depois." : (resposta?.mensagem || "Não foi possível salvar a campanha."); }));
-botaoCriarSala.addEventListener("click", () => socket.emit("criar-sala", { nome: campoNome.value }, mostrarSala));
-botaoEntrarSala.addEventListener("click", () => socket.emit("entrar-sala", { nome: campoNome.value, codigo: campoCodigo.value }, mostrarSala));
+botaoCriarSala.addEventListener("click", () => { const nome = campoNome.value; socket.emit("criar-sala", { nome }, resposta => mostrarSala(resposta, nome)); });
+botaoEntrarSala.addEventListener("click", () => { const nome = campoNome.value; socket.emit("entrar-sala", { nome, codigo: campoCodigo.value }, resposta => mostrarSala(resposta, nome)); });
 socket.on("atualizar-sala", dados => {
     listaParticipantes.replaceChildren();
     dados.participantes.forEach(p => { const item = document.createElement("li"); item.textContent = `${p.nome} — ${p.papel}`; listaParticipantes.appendChild(item); });
 });
 socket.on("sala-encerrada", () => {
+    sessaoSala = null; clearTimeout(temporizadorReentrada);
     mensagemSala.textContent = "O mestre saiu. A sala foi encerrada."; painelSala.hidden = true;
     listaParticipantes.replaceChildren(); cenario.replaceChildren(); atualizarPermissoes();
 });
-socket.on("connect", () => console.log("Conectado ao servidor! ID:", socket.id));
+// Reentrada automática: quando o socket reconecta (queda de rede, notebook/celular em repouso,
+// servidor reiniciado) ele ganha um novo id e sai da sala no servidor. Sem isto, a tela continua
+// mostrando a sala, mas a pessoa deixa de receber rolagens, tokens e tudo o mais.
+function reentrarNaSala() {
+    if (!sessaoSala) return;
+    clearTimeout(temporizadorReentrada);
+    const { nome, codigo, papel } = sessaoSala;
+    // Jogador avisa que espera ser Jogador: assim não "vira Mestre" se for o primeiro a voltar após um reinício.
+    socket.emit("entrar-sala", { nome, codigo, papelEsperado: papel === "Mestre" ? undefined : "Jogador" }, resposta => {
+        if (resposta?.ok) {
+            tentativasReentrada = 0; mostrarSala(resposta, nome);
+            mensagemSala.textContent = "Conexão restabelecida: você voltou para a sala."; return;
+        }
+        if (resposta?.aguardarMestre && tentativasReentrada++ < 15) {
+            mensagemSala.textContent = "Reconectando... aguardando o Mestre retomar a sala.";
+            temporizadorReentrada = setTimeout(reentrarNaSala, 2000); return;
+        }
+        sessaoSala = null; tentativasReentrada = 0; painelSala.hidden = true;
+        listaParticipantes.replaceChildren(); cenario.replaceChildren(); atualizarPermissoes();
+        mensagemSala.textContent = resposta?.mensagem || "Não foi possível voltar para a sala. Entre novamente com o código.";
+    });
+}
+socket.on("connect", () => { console.log("Conectado ao servidor! ID:", socket.id); if (sessaoSala) reentrarNaSala(); });
+socket.on("disconnect", () => { if (sessaoSala) mensagemSala.textContent = "Conexão perdida. Tentando reconectar..."; });
 
 function salvarVisualizacao() { if (estaEmUmaSala()) socket.emit("salvar-visualizacao", { zoom, posX, posY }); }
 el("aumentarZoom").addEventListener("click", () => { zoom = Math.min(zoom + .2, 5); atualizarMapa(); salvarVisualizacao(); });

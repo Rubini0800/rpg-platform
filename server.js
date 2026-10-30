@@ -116,6 +116,7 @@ io.on("connection", socket => {
         if (!nome || !codigo) return responder?.({ ok: false, mensagem: "Digite seu nome e o código da sala." });
         const sala = salas.get(codigo); if (!sala) return responder?.({ ok: false, mensagem: "Sala não encontrada. Confira o código." });
         const papel = sala.participantes.size === 0 ? "Mestre" : "Jogador";
+        if (papel === "Mestre" && dados?.papelEsperado === "Jogador") return responder?.({ ok: false, aguardarMestre: true, mensagem: "Aguardando o Mestre retomar a sala." });
         if (papel === "Mestre") sala.mestreId = socket.id;
         sala.participantes.set(socket.id, { nome, papel }); socket.join(codigo);
         socket.data.codigoSala = codigo; socket.data.papel = papel;
