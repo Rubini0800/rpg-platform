@@ -1,0 +1,90 @@
+MESA DE RPG — VERSÃO COM INTERFACE, PERSONAGENS E SALVAMENTO DE CAMPANHA
+
+INSTALAÇÃO
+1. Faça uma cópia de segurança da pasta C:\rpg-platform.
+2. Extraia este ZIP. Copie index.html, style.css, script.js, server.js e LEIA-ME.txt para C:\rpg-platform, substituindo os antigos.
+3. Preserve package.json, package-lock.json, node_modules e a pasta mapas.
+4. No terminal do VS Code, dentro de C:\rpg-platform, execute: node server.js
+5. Abra http://localhost:3000.
+
+INTERFACE (baseada no desenho enviado)
+- Use o botão com a seta na borda do painel para recolher/mostrar a guia lateral. Também pode usar a tecla B (fora de campos de texto) ou o botão “Ferramentas” no cabeçalho. “Modo foco” esconde os painéis; pressione Esc para sair dele.
+- “Modo foco” esconde o cabeçalho e os painéis para ampliar o cenário; use “Mostrar interface” para voltar.
+- A bandeja “Personagens salvos” fica abaixo do cenário. Clique num personagem da bandeja para colocar outra cópia no mapa.
+- O menu flutuante “Ferramentas” abre a régua em pés e a ferramenta de desenho. Para medir, selecione a régua e arraste entre dois pontos; para desenhar, selecione desenho e arraste no cenário. Os desenhos ficam salvos e são compartilhados com a sala. “Limpar desenhos” remove todos os traços da sala.
+- Salas novas começam sem o token de exemplo com a letra G.
+
+PERSONAGENS E TOKENS
+- Adicione um token; ele será guardado na bandeja para reutilização.
+- Selecione um token para editar o nome no painel e clique “Salvar nome”. Também é possível dar duplo clique no token para focar o campo de nome.
+- O nome aparece abaixo do token e também é atualizado na bandeja.
+- O tamanho do token é relativo à grade: com uma grade de 5 ft por quadrado, 5 ft equivale a um quadrado e 10 ft a dois quadrados.
+- Selecione itens e use “− Tamanho” e “+ Tamanho”; mapas e imagens podem ser redimensionados sem afetar os outros itens.
+- Para apagar: selecione e pressione DEL, ou clique com o botão direito e escolha “Apagar imagem/token”. A exclusão do cenário não apaga o personagem guardado na bandeja.
+
+MAPAS, GRADE E NAVEGAÇÃO
+- Adicione vários mapas e imagens. Arraste uma área vazia para mover a visão e use a rodinha ou os botões de zoom.
+- A grade tenta detectar automaticamente o espaçamento do mapa; essa detecção é experimental. Se necessário, selecione o mapa e use “Detectar grade do mapa” e os botões +Grade/-Grade.
+- “Cada quadrado representa (ft)” define a escala de jogo, não o espaçamento visual da grade.
+- O zoom, deslocamento, grade, escala, imagens, posições, tamanhos e nomes são salvos no servidor.
+
+SALVAMENTO E RETOMADA DA CAMPANHA
+- O servidor salva automaticamente a campanha no arquivo campanhas-salvas.json dentro da pasta do projeto. O botão “Salvar campanha agora” força um salvamento imediato.
+- Guarde o código de seis caracteres da sala. Para retomar após fechar o navegador ou reiniciar o servidor, inicie o servidor novamente e entre usando esse código. Se não houver ninguém na sala, a primeira pessoa que entrar reassume como mestre.
+- Não apague campanhas-salvas.json se quiser manter o progresso. O arquivo contém os mapas e tokens enviados em formato de dados; por isso pode crescer bastante.
+- Esse salvamento é local ao servidor onde a aplicação está instalada. Para uma publicação em hospedagem, confirme que a hospedagem permite escrita persistente em disco. Se o serviço apagar arquivos locais ao reiniciar/reimplantar, será necessário migrar as campanhas para um banco de dados e o armazenamento de imagens para um serviço persistente.
+
+DADOS E MULTIPLAYER
+- Exemplos: 1d20 + 5, 1d8 + 3d6, 2d12 + 1d4.
+- Dados suportados: d4, d6, d8, d10, d12, d16, d20 e d100.
+- As rolagens são calculadas no servidor e compartilhadas com todos os participantes da sala.
+- Mestre e jogadores podem adicionar, mover, redimensionar, renomear e apagar itens, conforme o comportamento atual do protótipo.
+
+LOGIN COM GOOGLE — PRÓXIMA ETAPA
+- O login Google ainda não está ativado nesta versão. Para fazê-lo com segurança será necessário publicar a aplicação em um domínio HTTPS, criar as credenciais OAuth no Google Cloud Console, configurar as URLs autorizadas e implementar a verificação de identidade no servidor.
+- Não basta colocar um botão no HTML: as credenciais e a validação devem ficar configuradas corretamente no servidor. Depois disso, poderemos relacionar cada conta Google às suas campanhas e permissões.
+
+LIMITAÇÕES
+- Esta versão é um protótipo de aprendizado, ainda sem autenticação robusta. Não exponha publicamente a aplicação com dados importantes antes de configurar autenticação, autorização e backups.
+- O salvamento em JSON é adequado para testar localmente; para muitos usuários ou uma hospedagem pública, recomendamos migrar para banco de dados e armazenamento persistente de arquivos.
+
+CORREÇÃO DE NAVEGAÇÃO DO CENÁRIO
+- Arraste uma área vazia com o botão esquerdo para mover a visão normalmente.
+- Para mover a visão mesmo quando o cursor está sobre um token/imagem selecionado, segure ESPAÇO e arraste com o botão esquerdo.
+- Alternativamente, segure/arraste com o botão do meio do mouse para mover a visão.
+- Arraste um token/imagem com o botão esquerdo sem segurar ESPAÇO para mover o próprio item.
+
+
+NAVEGAÇÃO PELO CENÁRIO
+Abra o menu flutuante “Ferramentas” no canto do cenário e clique em “Mover cenário”. Com esse modo ativo, arraste com o botão esquerdo mesmo por cima de tokens ou imagens para mover a visão sem mover os objetos. Clique novamente em “Mover cenário” para voltar ao modo normal. Também continuam disponíveis a rodinha para zoom e Espaço + arrastar.
+
+ATUALIZAÇÃO: APAGAR TRAÇOS E ESCURIDÃO EXPLORÁVEL
+
+- Para apagar somente um traço: clique em cima da linha para selecioná-la e pressione DEL/Backspace. O traço selecionado recebe um realce rosa/vermelho.
+- Também é possível clicar com o botão direito diretamente em um traço para apagá-lo imediatamente. O botão "Limpar desenhos" continua apagando todos os traços.
+- No menu flutuante "Ferramentas", o mestre pode ativar "Escuridão / revelar ao explorar" e escolher um alcance de 30, 60, 90 ou 120 pés.
+- Com a escuridão ativa, quando um token é movido e solto, a área ao redor dele é revelada no raio escolhido. As áreas já exploradas permanecem reveladas. O mestre pode usar "Recomeçar escuridão" para cobrir novamente o mapa.
+- Os controles de escuridão são exclusivos do mestre e a configuração/áreas reveladas são salvas com a campanha e sincronizadas com a sala.
+- A escuridão é uma primeira versão visual: ela cobre mapa e desenhos, mas os tokens continuam visíveis por cima. Não é ainda um sistema de ocultação individual de inimigos ou de visão com paredes/linha de visão.
+
+
+ATUALIZAÇÃO: BARRA DE ATALHOS E BLOQUEIO DO MAPA
+- A barra flutuante no topo do cenário oferece atalhos para selecionar, adicionar mapa, adicionar token, adicionar montaria/criatura, bloquear o mapa, salvar e abrir ferramentas.
+- O bloqueio é controlado pelo mestre e impede jogadores de arrastar a visão do cenário. Os jogadores ainda podem movimentar tokens normalmente.
+- O estado do bloqueio é salvo na campanha.
+- O atalho de montaria/criatura usa o mesmo seletor de imagem de token; depois de inserir, selecione o item e use o campo "Nome do token" para nomeá-lo.
+- Para iniciar: abra um terminal nesta pasta, execute `npm install` (se necessário) e depois `npm start`. Acesse http://localhost:3000.
+
+
+ATUALIZACAO v3: o nome sobreposto abaixo dos tokens no cenário foi ocultado. O nome continua salvo internamente e na biblioteca de tokens; apenas não aparece sobre o personagem no mapa.
+
+ATUALIZAÇÃO v5 — TOKENS, BLOQUEIO E NEVOA
+
+- Token: selecione um token e arraste o pequeno quadrado roxo no canto inferior direito para redimensionar com o mouse. O nome fica visível abaixo do token; dê duplo clique no token para renomear.
+- Bloqueio do mapa: o botão de cadeado bloqueia/desbloqueia a navegação do cenário para mestre e jogadores. Mesmo bloqueado, o mestre ainda pode posicionar tokens e editar a nevoa.
+- Nevoa: o mestre não vê a camada de escuridão. Em “Exploração”, “Manter áreas reveladas” preserva o caminho explorado; “Voltar a escurecer ao sair” revela apenas em volta dos tokens atuais. As ferramentas de pincel permitem cobrir ou revelar áreas manualmente para os jogadores.
+- Tokens escondidos: clique com o botão direito em um token como mestre e escolha ocultar/revelar para jogadores. Tokens ocultos não são enviados aos jogadores enquanto estiverem escondidos.
+- Biblioteca: o botão × remove um token salvo da biblioteca. Tokens que já foram colocados no mapa são mantidos.
+- O nome do token pode ser alterado com duplo clique.
+
+IMPORTANTE: faça backup da pasta atual antes de substituir arquivos. Preserve o arquivo campanhas-salvas.json se quiser manter suas campanhas. Reinicie o servidor depois de copiar os arquivos e atualize o navegador com Ctrl+F5.

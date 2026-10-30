@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Mesa de RPG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="cabecalho"><h1>Minha Mesa de RPG</h1><div class="acoes-cabecalho"><button id="alternarPainel" type="button" title="Recolher/mostrar painel">☰ Ferramentas</button><button id="modoFoco" type="button" title="Ocultar painéis e ampliar o cenário">Modo foco</button></div></header>
+    <button id="sairModoFoco" type="button" hidden>Mostrar interface</button>
+    <button id="alternarPainelLateral" class="botao-lateral" type="button" aria-label="Esconder painel lateral" aria-expanded="true" title="Esconder painel lateral (tecla B)">‹</button>
+    <main class="mesa">
+        <aside class="barra-ferramentas">
+            <h2>Multiplayer</h2>
+            <label for="nomeParticipante">Seu nome</label>
+            <input id="nomeParticipante" type="text" maxlength="24" placeholder="Digite seu nome">
+            <button id="criarSala" type="button">Criar sala</button>
+            <hr>
+            <label for="codigoSala">Código da sala</label>
+            <input id="codigoSala" type="text" maxlength="6" placeholder="Ex.: A7K9Q2">
+            <button id="entrarSala" type="button">Entrar na sala</button>
+            <p id="mensagemSala">Você ainda não está em uma sala.</p><button id="salvarCampanhaAgora" type="button" disabled>Salvar campanha agora</button><p class="ajuda">A campanha também é salva automaticamente no servidor. Guarde o código da sala para retomá-la depois.</p>
+            <div id="painelSala" hidden>
+                <p>Sala: <strong id="codigoExibido"></strong></p>
+                <p>Seu papel: <strong id="papelExibido"></strong></p>
+                <h3>Participantes</h3><ul id="listaParticipantes"></ul>
+            </div>
+            <hr>
+            <h2>Imagens da mesa</h2>
+            <p class="ajuda">Mestre e jogadores podem adicionar imagens e tokens. Arraste-os para posicionar.</p>
+            <button id="botaoCarregarMapa" type="button" disabled>Adicionar mapa/imagem</button>
+            <input id="arquivoMapa" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+            <button id="botaoAdicionarToken" type="button" disabled>Adicionar token</button>
+            <input id="arquivoToken" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+            <p class="ajuda">Imagem/mapa: até 4 MB. Token: até 300 KB. Os uploads não ficam salvos após reiniciar o servidor.</p>
+            <h2>Navegação do cenário</h2>
+            <div class="botoes-linha"><button id="diminuirZoom" type="button" title="Afastar">− Zoom</button><button id="aumentarZoom" type="button" title="Aproximar">+ Zoom</button></div>
+            <button id="resetarZoom" type="button">Centralizar cenário</button>
+            <p class="ajuda">Use a rodinha do mouse para zoom. Arraste uma área vazia para mover a visão; arraste uma imagem para mover apenas ela.</p>
+            <h2>Grade do mapa</h2>
+            <p class="ajuda">Ao adicionar um mapa, tente detectar a grade automaticamente. Como cada mapa é diferente, você pode ajustar o espaçamento depois.</p>
+            <button id="detectarGradeAgora" type="button" disabled>Detectar grade do mapa</button>
+            <div class="botoes-linha"><button id="diminuirGrade" type="button" disabled>− Grade</button><button id="aumentarGrade" type="button" disabled>+ Grade</button></div>
+            <p id="informacaoGrade" class="ajuda">Grade atual: 32 px por quadrado.</p>
+            <label for="pesPorQuadrado">Cada quadrado representa (ft)</label>
+            <select id="pesPorQuadrado"><option value="1">1 ft</option><option value="5" selected>5 ft</option><option value="10">10 ft</option><option value="15">15 ft</option><option value="20">20 ft</option><option value="30">30 ft</option></select>
+            <section class="painel-nome-token" hidden>
+                <h2>Personagem selecionado</h2>
+                <p id="itemSelecionadoInfo" class="ajuda">Selecione um token ou imagem no cenário.</p>
+                <label for="nomeTokenSelecionado">Nome do token</label>
+                <input id="nomeTokenSelecionado" type="text" maxlength="40" placeholder="Ex.: Aragorn" disabled>
+                <button id="salvarNomeToken" type="button" disabled>Salvar nome</button>
+            </section>
+            <h2>Tamanho do item selecionado</h2>
+            <div class="botoes-linha"><button id="diminuirTamanhoItem" type="button" disabled>− Tamanho</button><button id="aumentarTamanhoItem" type="button" disabled>+ Tamanho</button></div>
+            <label for="tamanhoTokenFt">Tamanho do token (ft)</label>
+            <select id="tamanhoTokenFt" disabled><option value="5">5 ft</option><option value="10">10 ft</option><option value="15">15 ft</option><option value="20">20 ft</option><option value="30">30 ft</option><option value="40">40 ft</option><option value="50">50 ft</option></select>
+            <button id="aplicarTamanhoToken" type="button" disabled>Aplicar tamanho do token</button>
+            <h2>Rolagem de dados</h2>
+            <label for="expressaoDados">Expressão dos dados</label>
+            <input id="expressaoDados" type="text" value="1d20" maxlength="80" placeholder="Ex.: 1d8 + 3d6">
+            <label for="bonusAtaque">Bônus / dano adicional</label>
+            <input id="bonusAtaque" type="number" value="0" min="-100000" max="100000">
+            <button id="botaoDado" type="button">Rolar dados</button>
+            <p class="ajuda">Exemplos: 1d20 + 5 · 1d8 + 3d6 · 2d12 + 1d4. Dados: d4, d6, d8, d10, d12, d16, d20 e d100.</p>
+            <p id="resultado" aria-live="polite">Resultado: aguardando rolagem...</p>
+        </aside>
+        <section class="area-mapa">
+            <div class="controles-mapa"><h2>Cenário da aventura</h2><p class="ajuda">Arraste o fundo para mover a visão. Clique em uma imagem e pressione DEL para apagá-la, ou clique com o botão direito para abrir as opções.</p></div>
+            <div class="mapa-visualizacao" id="mapaVisualizacao">
+                <div id="cenario" aria-label="Cenário da mesa"></div>
+                <nav class="barra-atalhos-mapa" aria-label="Atalhos do cenário">
+                    <button id="atalhoSelecionar" type="button" title="Selecionar ferramenta" aria-label="Selecionar">⌕</button>
+                    <button id="atalhoMapa" type="button" title="Adicionar ou trocar mapa" aria-label="Mapas">🌲</button>
+                    <button id="atalhoToken" type="button" title="Adicionar token" aria-label="Tokens">♟</button>
+                    <button id="atalhoMontaria" type="button" title="Adicionar montaria ou criatura como token" aria-label="Montarias e criaturas">🐎</button>
+                    <button id="atalhoBloquearMapa" type="button" title="Bloquear movimento do mapa para jogadores" aria-label="Bloquear mapa" aria-pressed="false">🔓</button>
+                    <button id="atalhoSalvar" type="button" title="Salvar campanha" aria-label="Salvar campanha">▣</button>
+                    <button id="atalhoMais" type="button" title="Abrir ferramentas" aria-label="Mais ferramentas">▦</button>
+                </nav>
+                <div id="painelAtalho" class="painel-atalho" hidden>
+                    <strong id="tituloPainelAtalho">Ferramentas</strong>
+                    <button id="acaoAtalhoPrincipal" type="button">Adicionar imagem</button>
+                    <button id="acaoSalvarTokenBiblioteca" type="button" hidden>Salvar token selecionado na biblioteca</button>
+                    <button id="acaoSalvarCampanha" type="button" hidden>Salvar campanha agora</button>
+                    <p id="ajudaPainelAtalho" class="ajuda">Escolha uma opção.</p>
+                </div>
+                <button id="abrirMenuFerramentas" class="botao-ferramentas-flutuante" type="button">Ferramentas ▾</button>
+                <div id="menuFerramentasFoco" class="menu-ferramentas-foco" hidden>
+                    <strong>Ferramentas do cenário</strong>
+                    <button id="ativarMoverCenario" type="button">Mover cenário</button>
+                    <button id="ativarRegua" type="button">Régua em pés</button>
+                    <button id="ativarDesenho" type="button">Desenhar no mapa</button>
+                    <button id="limparDesenhos" type="button">Limpar desenhos</button>
+                    <hr class="separador-ferramentas">
+                    <strong>Visão do mestre</strong>
+                    <label class="controle-nevoa"><input id="ativarNevoa" type="checkbox" disabled> Escuridão / revelar ao explorar</label>
+                    <label for="raioNevoa">Alcance revelado</label>
+                    <select id="raioNevoa" disabled><option value="30">30 ft</option><option value="60" selected>60 ft</option><option value="90">90 ft</option><option value="120">120 ft</option></select>
+                    <label for="modoNevoa">Exploração</label><select id="modoNevoa" disabled><option value="persistente">Manter áreas reveladas</option><option value="dinamica">Voltar a escurecer ao sair</option></select><button id="limparRevelacao" type="button" disabled>Recomeçar escuridão</button><hr><strong>Visão dinâmica — paredes</strong><p class="ajuda">Ative a visão dinâmica e desenhe linhas sobre paredes/portas fechadas. A visão dos tokens será bloqueada por essas linhas. Selecione um token e use as setas do teclado para movê-lo; Shift + seta move um quadrado. Q/E gira em 15°; também pode arrastar a alça ↻ acima do token.</p><label for="visaoTokenFt">Alcance do token selecionado</label><select id="visaoTokenFt" disabled><option value="30">30 ft</option><option value="60" selected>60 ft</option><option value="90">90 ft</option><option value="120">120 ft</option></select><button id="aplicarVisaoToken" type="button" disabled>Aplicar alcance ao token</button><button id="ferramentaParedes" type="button" disabled>Desenhar parede / obstáculo</button><button id="limparParedes" type="button" disabled>Limpar todas as paredes</button><hr><strong>Áreas de efeito</strong><p class="ajuda">Escolha um formato e tamanho, depois clique no mapa para posicionar. Somente o Mestre pode criar e remover.</p><label for="tipoAreaEfeito">Formato</label><select id="tipoAreaEfeito"><option value="circulo">Círculo</option><option value="cone">Cone</option><option value="linha">Linha</option><option value="quadrado">Quadrado</option></select><label for="tamanhoAreaEfeito">Tamanho (ft)</label><select id="tamanhoAreaEfeito"><option value="10">10 ft</option><option value="15">15 ft</option><option value="20" selected>20 ft</option><option value="30">30 ft</option><option value="40">40 ft</option><option value="60">60 ft</option></select><button id="ferramentaAreaEfeito" type="button" disabled>Posicionar área de efeito</button><button id="limparAreasEfeito" type="button" disabled>Limpar áreas de efeito</button><p class="ajuda">Depois de posicionar, clique em uma área para selecioná-la e pressione Delete para removê-la.</p><hr><strong>Nevoa manual (mestre)</strong><button id="ferramentaCobrir" type="button" disabled>Cobrir área para jogadores</button><button id="ferramentaRevelar" type="button" disabled>Revelar área para jogadores</button><label for="formatoPincelNevoa">Formato do pincel</label><select id="formatoPincelNevoa" disabled><option value="circulo">Circular</option><option value="quadrado">Quadrado</option></select><label for="raioPincelNevoa">Tamanho do pincel: <output id="valorRaioPincelNevoa">90 px</output></label><input id="raioPincelNevoa" type="range" min="20" max="300" step="5" value="90" disabled><button id="limparNevoaManual" type="button" disabled>Limpar marcas manuais</button>
+                    <p class="ajuda">Somente o mestre controla esta opção. Ao mover um token, a área ao redor dele é revelada dentro do alcance escolhido.</p>
+                    <p id="estadoFerramenta" class="ajuda">Selecione uma ferramenta.</p>
+                </div>
+                <div id="menuObjeto" class="menu-objeto" hidden><button id="alternarVisibilidadeToken" type="button" hidden>Ocultar token para jogadores</button><button id="apagarObjeto" type="button">Apagar imagem/token</button></div>
+                <div id="animacaoDados" class="animacao-dados" hidden>
+                    <div class="dado-animado" id="dadoAnimado">🎲</div>
+                    <strong id="textoAnimacao">Rolando dados...</strong>
+                    <span id="resultadoAnimacao"></span>
+                </div>
+            </div>
+            <section class="bandeja-personagens" aria-label="Personagens salvos">
+                <div class="bandeja-cabecalho"><h3>Personagens salvos</h3><span class="ajuda">Clique em um personagem para colocá-lo novamente no cenário.</span></div>
+                <div id="listaPersonagensSalvos" class="lista-personagens"><p class="ajuda">Os tokens que você adicionar aparecerão aqui para reutilização.</p></div>
+            </section>
+        </section>
+    </main>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
