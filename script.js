@@ -99,25 +99,46 @@ function enviarRedimensionamento(item, dados) {
     socket.emit("redimensionar-objeto", { id: item.id, largura: dados.largura, tamanhoFt: dados.tamanhoFt });
 }
 // Sessão atual da sala. Se o socket cair e reconectar, o servidor o enxerga como uma conexão NOVA,
-// fora da sala; por isso guardamos nome/código para reentrar automaticamente (ver reentrarNaSala).
+// fora da sala; por isso guardamos nome/código/chave para reentrar automaticamente (ver reentrarNaSala).
 let sessaoSala = null, tentativasReentrada = 0, temporizadorReentrada = null;
-function mostrarSala(resposta, nome) {
+const campoChaveMestre = el("chaveMestre"), caixaChaveMestre = el("caixaChaveMestre"), chaveMestreExibida = el("chaveMestreExibida");
+// A Chave do Mestre fica só neste navegador (localStorage); o servidor guarda apenas o hash dela.
+const chaveLocal = codigo => "rpg-vtt:chave-mestre:" + codigo;
+function lerChaveGuardada(codigo) { try { return localStorage.getItem(chaveLocal(codigo)) || ""; } catch (e) { return ""; } }
+function guardarChave(codigo, chave) { try { localStorage.setItem(chaveLocal(codigo), chave); } catch (e) { /* modo privado: segue sem guardar */ } }
+function esquecerChave(codigo) { try { localStorage.removeItem(chaveLocal(codigo)); } catch (e) { /* ignora */ } }
+function mostrarChaveMestre(chave) { caixaChaveMestre.hidden = !chave; chaveMestreExibida.textContent = chave || ""; }
+el("copiarChaveMestre").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(chaveMestreExibida.textContent); mensagemSala.textContent = "Chave do Mestre copiada."; }
+    catch (e) { mensagemSala.textContent = "Não consegui copiar automaticamente. Selecione a chave e copie manualmente."; }
+});
+function mostrarSala(resposta, nome, chaveMestre) {
     if (!resposta || !resposta.ok) { mensagemSala.textContent = resposta?.mensagem || "Não foi possível entrar na sala."; return; }
-    sessaoSala = { nome, codigo: resposta.codigo, papel: resposta.papel };
-    mensagemSala.textContent = resposta.mensagem || "Conectado à sala! As alterações são salvas automaticamente neste computador/servidor."; painelSala.hidden = false;
+    const ehMestre = resposta.papel === "Mestre" && Boolean(chaveMestre);
+    sessaoSala = { nome, codigo: resposta.codigo, papel: resposta.papel, chaveMestre: ehMestre ? chaveMestre : "" };
+    if (ehMestre) guardarChave(resposta.codigo, chaveMestre);
+    mostrarChaveMestre(ehMestre ? chaveMestre : "");
+    mensagemSala.textContent = resposta.mensagem || "Conectado à sala! As alterações são salvas automaticamente na nuvem."; painelSala.hidden = false;
     codigoExibido.textContent = resposta.codigo; papelExibido.textContent = resposta.papel; renderizarNevoa();
     campoCodigo.value = resposta.codigo; atualizarPermissoes();
 }
 el("salvarCampanhaAgora").addEventListener("click", () => socket.emit("salvar-campanha", {}, resposta => { mensagemSala.textContent = resposta?.ok ? "Campanha salva! Guarde o código da sala para continuar depois." : (resposta?.mensagem || "Não foi possível salvar a campanha."); }));
-botaoCriarSala.addEventListener("click", () => { const nome = campoNome.value; socket.emit("criar-sala", { nome }, resposta => mostrarSala(resposta, nome)); });
-botaoEntrarSala.addEventListener("click", () => { const nome = campoNome.value; socket.emit("entrar-sala", { nome, codigo: campoCodigo.value }, resposta => mostrarSala(resposta, nome)); });
+botaoCriarSala.addEventListener("click", () => { const nome = campoNome.value; socket.emit("criar-sala", { nome }, resposta => mostrarSala(resposta, nome, resposta?.chaveMestre)); });
+botaoEntrarSala.addEventListener("click", () => {
+    const nome = campoNome.value, codigo = campoCodigo.value.trim().toUpperCase();
+    const digitada = campoChaveMestre.value.trim(), chaveMestre = digitada || lerChaveGuardada(codigo);   // neste navegador o Mestre volta sem digitar
+    socket.emit("entrar-sala", { nome, codigo, chaveMestre }, resposta => {
+        if (!resposta?.ok && chaveMestre && /Chave do Mestre/.test(resposta?.mensagem || "")) esquecerChave(codigo);
+        mostrarSala(resposta, nome, chaveMestre); if (resposta?.ok) campoChaveMestre.value = "";
+    });
+});
 socket.on("atualizar-sala", dados => {
     listaParticipantes.replaceChildren();
     dados.participantes.forEach(p => { const item = document.createElement("li"); item.textContent = `${p.nome} — ${p.papel}`; listaParticipantes.appendChild(item); });
 });
 socket.on("sala-encerrada", () => {
     sessaoSala = null; clearTimeout(temporizadorReentrada);
-    mensagemSala.textContent = "O mestre saiu. A sala foi encerrada."; painelSala.hidden = true;
+    mostrarChaveMestre(""); mensagemSala.textContent = "A sala foi encerrada."; painelSala.hidden = true;
     listaParticipantes.replaceChildren(); cenario.replaceChildren(); atualizarPermissoes();
 });
 // Reentrada automática: quando o socket reconecta (queda de rede, notebook/celular em repouso,
@@ -126,24 +147,30 @@ socket.on("sala-encerrada", () => {
 function reentrarNaSala() {
     if (!sessaoSala) return;
     clearTimeout(temporizadorReentrada);
-    const { nome, codigo, papel } = sessaoSala;
-    // Jogador avisa que espera ser Jogador: assim não "vira Mestre" se for o primeiro a voltar após um reinício.
-    socket.emit("entrar-sala", { nome, codigo, papelEsperado: papel === "Mestre" ? undefined : "Jogador" }, resposta => {
+    const { nome, codigo, chaveMestre } = sessaoSala;
+    socket.emit("entrar-sala", { nome, codigo, chaveMestre }, resposta => {
         if (resposta?.ok) {
-            tentativasReentrada = 0; mostrarSala(resposta, nome);
+            tentativasReentrada = 0; mostrarSala(resposta, nome, chaveMestre);
             mensagemSala.textContent = "Conexão restabelecida: você voltou para a sala."; return;
         }
-        if (resposta?.aguardarMestre && tentativasReentrada++ < 15) {
-            mensagemSala.textContent = "Reconectando... aguardando o Mestre retomar a sala.";
-            temporizadorReentrada = setTimeout(reentrarNaSala, 2000); return;
+        if (resposta?.temporario && tentativasReentrada++ < 8) {      // ex.: banco acordando; tenta de novo
+            mensagemSala.textContent = "Reconectando à sala...";
+            temporizadorReentrada = setTimeout(reentrarNaSala, 3000); return;
         }
-        sessaoSala = null; tentativasReentrada = 0; painelSala.hidden = true;
+        sessaoSala = null; tentativasReentrada = 0; painelSala.hidden = true; mostrarChaveMestre("");
         listaParticipantes.replaceChildren(); cenario.replaceChildren(); atualizarPermissoes();
         mensagemSala.textContent = resposta?.mensagem || "Não foi possível voltar para a sala. Entre novamente com o código.";
     });
 }
 socket.on("connect", () => { console.log("Conectado ao servidor! ID:", socket.id); if (sessaoSala) reentrarNaSala(); });
 socket.on("disconnect", () => { if (sessaoSala) mensagemSala.textContent = "Conexão perdida. Tentando reconectar..."; });
+socket.on("mestre-ausente", () => { mensagemSala.textContent = "O Mestre desconectou. A mesa continua aberta e ele pode voltar a qualquer momento."; });
+socket.on("mestre-presente", () => { if (papelExibido.textContent !== "Mestre") mensagemSala.textContent = "O Mestre voltou à mesa."; });
+socket.on("sessao-substituida", () => {
+    sessaoSala = null; clearTimeout(temporizadorReentrada); mostrarChaveMestre("");
+    mensagemSala.textContent = "Você entrou como Mestre em outro lugar. Esta aba saiu da sala."; painelSala.hidden = true;
+    listaParticipantes.replaceChildren(); cenario.replaceChildren(); atualizarPermissoes();
+});
 
 function salvarVisualizacao() { if (estaEmUmaSala()) socket.emit("salvar-visualizacao", { zoom, posX, posY }); }
 el("aumentarZoom").addEventListener("click", () => { zoom = Math.min(zoom + .2, 5); atualizarMapa(); salvarVisualizacao(); });
@@ -186,6 +213,9 @@ el("sairModoFoco").addEventListener("click", () => { document.body.classList.rem
 
 // Detecta uma periodicidade provável nas linhas da grade. Como mapas artísticos variam,
 // os botões +Grade/-Grade permitem corrigir o resultado automaticamente estimado.
+// Imagens externas são pedidas com CORS para que o navegador possa guardá-las em cache já "legíveis" pelo canvas
+// (usado em "Detectar grade agora"). Data URLs de salas antigas não precisam disso.
+function definirOrigemImagem(img, origem) { if (origem && !/^(data|blob):/.test(origem)) img.crossOrigin = "anonymous"; img.src = origem; }
 function detectarGrade(dataUrl) {
     return new Promise(resolve => {
         const imagem = new Image();
@@ -233,6 +263,7 @@ function detectarGrade(dataUrl) {
             } catch (e) { resolve(null); }
         };
         imagem.onerror = () => resolve(null);
+        if (!/^(data|blob):/.test(dataUrl)) imagem.crossOrigin = "anonymous";   // sem isto o canvas fica "contaminado" e a leitura falha
         imagem.src = dataUrl;
     });
 }
@@ -244,20 +275,23 @@ async function enviarImagem(arquivo, tipo) {
     const limite = tipo === "mapa" ? 4 * 1024 * 1024 : 300 * 1024;
     if (!permitidos.includes(arquivo.type)) { mensagemSala.textContent = "Escolha PNG, JPG, WEBP ou GIF."; return; }
     if (arquivo.size > limite) { mensagemSala.textContent = tipo === "mapa" ? "A imagem deve ter no máximo 4 MB." : "O token deve ter no máximo 300 KB."; return; }
-    const leitor = new FileReader();
     const nomeArquivo = arquivo.name.replace(/\.[^.]+$/, "").slice(0, 40) || (tipo === "token" ? "Personagem" : "Mapa");
-    leitor.onload = async () => {
-        let gradeDetectada = null;
-        if (tipo === "mapa") {
-            mensagemSala.textContent = "Analisando a grade do mapa...";
-            gradeDetectada = await detectarGrade(leitor.result);
-        }
-        socket.emit(tipo === "mapa" ? "adicionar-imagem" : "adicionar-token", { dataUrl: leitor.result, tipo: tipo, nome: nomeArquivo, gradeDetectada }, resposta => {
-            mensagemSala.textContent = resposta?.mensagem || "Pedido enviado.";
-        });
-    };
-    leitor.onerror = () => { mensagemSala.textContent = "Não foi possível ler o arquivo."; };
-    leitor.readAsDataURL(arquivo);
+    const parametros = new URLSearchParams({ tipo, nome: nomeArquivo });
+    if (tipo === "mapa") {
+        mensagemSala.textContent = "Analisando a grade do mapa...";
+        const leitura = await new Promise(resolver => { const leitor = new FileReader(); leitor.onload = () => resolver(leitor.result); leitor.onerror = () => resolver(null); leitor.readAsDataURL(arquivo); });
+        if (!leitura) { mensagemSala.textContent = "Não foi possível ler o arquivo."; return; }
+        const gradeDetectada = await detectarGrade(leitura);
+        if (gradeDetectada) parametros.set("grade", JSON.stringify(gradeDetectada));
+    }
+    // O arquivo vai direto como corpo de uma requisição HTTP; o servidor o guarda no serviço de imagens
+    // e avisa a sala inteira pelo WebSocket. O X-Socket-Id prova que quem envia está dentro da sala.
+    mensagemSala.textContent = "Enviando imagem...";
+    try {
+        const resposta = await fetch("/api/imagens?" + parametros, { method: "POST", headers: { "Content-Type": arquivo.type, "X-Socket-Id": socket.id || "" }, body: arquivo });
+        const dados = await resposta.json().catch(() => null);
+        mensagemSala.textContent = dados?.mensagem || (resposta.ok ? "Imagem enviada." : "Não foi possível enviar a imagem.");
+    } catch (erro) { mensagemSala.textContent = "Sem conexão com o servidor: a imagem não foi enviada."; }
 }
 botaoCarregarMapa.addEventListener("click", () => arquivoMapa.click());
 botaoAdicionarToken.addEventListener("click", () => arquivoToken.click());
@@ -320,7 +354,7 @@ function criarElemento(dados) {
     let item;
     if (dados.tipo === "token") {
         item = document.createElement("div"); item.className = "objeto-cenario objeto-token-wrapper";
-        const imagem = document.createElement("img"); imagem.src = dados.dataUrl || ""; imagem.alt = dados.nome || "Token"; imagem.draggable = false;
+        const imagem = document.createElement("img"); definirOrigemImagem(imagem, dados.url || dados.dataUrl || ""); imagem.alt = dados.nome || "Token"; imagem.draggable = false;
         const rotulo = document.createElement("span"); rotulo.className = "rotulo-token"; rotulo.textContent = dados.nome || "Token";
         const alca = document.createElement("span"); alca.className = "alca-redimensionar-token"; alca.title = "Arraste para aumentar ou diminuir o token"; alca.setAttribute("aria-label", "Redimensionar token");
         alca.addEventListener("mousedown", iniciarRedimensionamentoToken);
@@ -328,7 +362,7 @@ function criarElemento(dados) {
         girador.addEventListener("mousedown", iniciarRotacaoToken);
         item.append(imagem, rotulo, alca, girador);
     } else {
-        item = document.createElement("img"); item.src = dados.dataUrl; item.alt = dados.nome || (dados.tipo === "mapa" ? "Mapa" : "Imagem da mesa");
+        item = document.createElement("img"); definirOrigemImagem(item, dados.url || dados.dataUrl || ""); item.alt = dados.nome || (dados.tipo === "mapa" ? "Mapa" : "Imagem da mesa");
         item.className = "objeto-cenario " + (dados.tipo === "mapa" ? "objeto-mapa" : "objeto-imagem"); item.draggable = false;
     }
     item.id = dados.id; item.dataset.tipo = dados.tipo; item.dataset.nome = dados.nome || (dados.tipo === "token" ? "Token" : "");
@@ -357,7 +391,7 @@ function renderizarBibliotecaTokens() {
     if (!bibliotecaTokens.length) { const vazio = document.createElement("p"); vazio.className = "ajuda"; vazio.textContent = "Nenhum personagem salvo ainda. Adicione um token para guardá-lo aqui."; listaPersonagensSalvos.appendChild(vazio); return; }
     bibliotecaTokens.forEach(token => {
         const botao = document.createElement("button"); botao.type = "button"; botao.className = "cartao-personagem"; botao.title = `Adicionar ${token.nome} ao cenário`;
-        const img = document.createElement("img"); img.src = token.dataUrl; img.alt = token.nome;
+        const img = document.createElement("img"); definirOrigemImagem(img, token.url || token.dataUrl || ""); img.alt = token.nome;
         const nome = document.createElement("span"); nome.textContent = token.nome;
         botao.append(img, nome); botao.addEventListener("click", () => socket.emit("recolocar-token", { bibliotecaId: token.id }, resposta => { if (resposta && !resposta.ok) mensagemSala.textContent = resposta.mensagem; }));
         const remover = document.createElement("button"); remover.type="button"; remover.className="remover-token-salvo"; remover.textContent="×"; remover.title=`Excluir ${token.nome} da biblioteca`;

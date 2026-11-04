@@ -19,11 +19,18 @@
             <hr>
             <label for="codigoSala">Código da sala</label>
             <input id="codigoSala" type="text" maxlength="6" placeholder="Ex.: A7K9Q2">
+            <label for="chaveMestre">Chave do Mestre (só se você for o Mestre)</label>
+            <input id="chaveMestre" type="password" maxlength="100" placeholder="Deixe vazio se for jogador" autocomplete="off">
             <button id="entrarSala" type="button">Entrar na sala</button>
-            <p id="mensagemSala">Você ainda não está em uma sala.</p><button id="salvarCampanhaAgora" type="button" disabled>Salvar campanha agora</button><p class="ajuda">A campanha também é salva automaticamente no servidor. Guarde o código da sala para retomá-la depois.</p>
+            <p id="mensagemSala">Você ainda não está em uma sala.</p><button id="salvarCampanhaAgora" type="button" disabled>Salvar campanha agora</button><p class="ajuda">A campanha é salva automaticamente na nuvem. Guarde o código da sala e, se for o Mestre, a Chave do Mestre para retomá-la depois.</p>
             <div id="painelSala" hidden>
                 <p>Sala: <strong id="codigoExibido"></strong></p>
                 <p>Seu papel: <strong id="papelExibido"></strong></p>
+                <div id="caixaChaveMestre" class="caixa-chave" hidden>
+                    <p><strong>Chave do Mestre</strong> — guarde em local seguro. Sem ela ninguém recupera o papel de Mestre desta sala.</p>
+                    <code id="chaveMestreExibida"></code>
+                    <button id="copiarChaveMestre" type="button">Copiar chave</button>
+                </div>
                 <h3>Participantes</h3><ul id="listaParticipantes"></ul>
             </div>
             <hr>
@@ -33,7 +40,7 @@
             <input id="arquivoMapa" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
             <button id="botaoAdicionarToken" type="button" disabled>Adicionar token</button>
             <input id="arquivoToken" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-            <p class="ajuda">Imagem/mapa: até 4 MB. Token: até 300 KB. Os uploads não ficam salvos após reiniciar o servidor.</p>
+            <p class="ajuda">Imagem/mapa: até 4 MB. Token: até 300 KB. As imagens ficam guardadas na nuvem junto com a campanha.</p>
             <h2>Navegação do cenário</h2>
             <div class="botoes-linha"><button id="diminuirZoom" type="button" title="Afastar">− Zoom</button><button id="aumentarZoom" type="button" title="Aproximar">+ Zoom</button></div>
             <button id="resetarZoom" type="button">Centralizar cenário</button>

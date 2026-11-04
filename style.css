@@ -285,3 +285,8 @@ body.painel-recolhido .botao-lateral { left:0; }
 #formatoPincelNevoa { width: 100%; min-height: 36px; }
 #valorRaioPincelNevoa { display: inline-block; min-width: 48px; color: #d8ccff; font-weight: 700; }
 #raioPincelNevoa { accent-color: #9b82f6; cursor: pointer; }
+
+/* Caixa com a Chave do Mestre (mostrada só ao Mestre) */
+.caixa-chave { margin: 8px 0; padding: 8px; border: 1px solid #b8860b; border-radius: 6px; background: rgba(184, 134, 11, .12); }
+.caixa-chave p { margin: 0 0 6px; font-size: .85em; }
+.caixa-chave code { display: block; margin-bottom: 6px; padding: 4px 6px; border-radius: 4px; background: rgba(0, 0, 0, .35); word-break: break-all; user-select: all; }
