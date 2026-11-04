@@ -211,9 +211,8 @@ function adicionarImagem(codigo, sala, { tipo, nome, url, chave, grade }) {
     }
     const bibliotecaId = novoId("personagem"), nomeToken = nome || "Personagem";
     sala.bibliotecaTokens.push({ id: bibliotecaId, nome: nomeToken, url, chave, tamanhoFt: 5 });
-    sala.objetos.push({ id: novoId("token"), bibliotecaId, tipo: "token", nome: nomeToken, url, chave, tamanhoFt: 5, left: 4960 + (sala.objetos.length % 6) * 18, top: 3980 + (sala.objetos.length % 6) * 18 });
-    agendarSalvamento(codigo); emitirObjetos(codigo, sala); emitirBiblioteca(codigo, sala);
-    return "Token adicionado e salvo na bandeja de personagens!";
+    agendarSalvamento(codigo); emitirBiblioteca(codigo, sala);
+    return "Token salvo na bandeja de personagens! Arraste-o até o ponto desejado do mapa para colocá-lo.";
 }
 
 // Upload por HTTP (corpo = bytes da imagem). Quem envia precisa provar que está numa sala: o cabeçalho
@@ -445,7 +444,9 @@ io.on("connection", socket => {
         if (sala.objetos.length >= MAX_OBJETOS_POR_SALA) return responder?.({ ok: false, mensagem: "Limite de 40 itens por sala." });
         const salvo = sala.bibliotecaTokens.find(t => t.id === dados?.bibliotecaId);
         if (!salvo) return responder?.({ ok: false, mensagem: "Personagem não encontrado na bandeja." });
-        sala.objetos.push({ id: "token-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7), bibliotecaId: salvo.id, tipo: "token", nome: salvo.nome, url: salvo.url, chave: salvo.chave, dataUrl: salvo.dataUrl, tamanhoFt: salvo.tamanhoFt || 5, left: 4960 + (sala.objetos.length % 6) * 24, top: 3980 + (sala.objetos.length % 6) * 24 });
+        const left = Number.isFinite(dados?.left) ? Math.max(0, Math.min(10000, dados.left)) : 4974;
+        const top = Number.isFinite(dados?.top) ? Math.max(0, Math.min(8000, dados.top)) : 3974;
+        sala.objetos.push({ id: novoId("token"), bibliotecaId: salvo.id, tipo: "token", nome: salvo.nome, url: salvo.url, chave: salvo.chave, dataUrl: salvo.dataUrl, tamanhoFt: salvo.tamanhoFt || 5, left, top });
         agendarSalvamento(codigo); emitirObjetos(codigo, sala); responder?.({ ok: true });
     });
     socket.on("renomear-objeto", (dados, responder) => {

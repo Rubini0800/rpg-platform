@@ -390,10 +390,24 @@ function renderizarBibliotecaTokens() {
     listaPersonagensSalvos.replaceChildren();
     if (!bibliotecaTokens.length) { const vazio = document.createElement("p"); vazio.className = "ajuda"; vazio.textContent = "Nenhum personagem salvo ainda. Adicione um token para guardá-lo aqui."; listaPersonagensSalvos.appendChild(vazio); return; }
     bibliotecaTokens.forEach(token => {
-        const botao = document.createElement("button"); botao.type = "button"; botao.className = "cartao-personagem"; botao.title = `Adicionar ${token.nome} ao cenário`;
+        const botao = document.createElement("button"); botao.type = "button"; botao.className = "cartao-personagem"; botao.title = `Arraste ${token.nome} até o mapa ou clique para adicionar no centro`; botao.draggable = true;
         const img = document.createElement("img"); definirOrigemImagem(img, token.url || token.dataUrl || ""); img.alt = token.nome;
         const nome = document.createElement("span"); nome.textContent = token.nome;
-        botao.append(img, nome); botao.addEventListener("click", () => socket.emit("recolocar-token", { bibliotecaId: token.id }, resposta => { if (resposta && !resposta.ok) mensagemSala.textContent = resposta.mensagem; }));
+        botao.append(img, nome);
+        botao.addEventListener("dragstart", evento => {
+            if (!estaEmUmaSala()) { evento.preventDefault(); mensagemSala.textContent = "Entre em uma sala para colocar personagens no mapa."; return; }
+            evento.dataTransfer.effectAllowed = "copy";
+            evento.dataTransfer.setData("application/x-rpg-token", token.id);
+            evento.dataTransfer.setData("text/plain", token.id);
+            botao.classList.add("arrastando-token-biblioteca");
+        });
+        botao.addEventListener("dragend", () => botao.classList.remove("arrastando-token-biblioteca"));
+        botao.addEventListener("click", () => {
+            if (!estaEmUmaSala()) { mensagemSala.textContent = "Entre em uma sala para colocar personagens no mapa."; return; }
+            const rect = areaVisualizacao.getBoundingClientRect();
+            const ponto = coordenadaCenario({ clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 });
+            socket.emit("recolocar-token", { bibliotecaId: token.id, left: ponto.x - 26, top: ponto.y - 26 }, resposta => { if (resposta && !resposta.ok) mensagemSala.textContent = resposta.mensagem; });
+        });
         const remover = document.createElement("button"); remover.type="button"; remover.className="remover-token-salvo"; remover.textContent="×"; remover.title=`Excluir ${token.nome} da biblioteca`;
         remover.addEventListener("click", evento => { evento.stopPropagation(); if(confirm(`Excluir “${token.nome}” da biblioteca? Tokens já colocados no mapa serão mantidos.`)) socket.emit("apagar-token-biblioteca", {id:token.id}, resposta => { mensagemSala.textContent=resposta?.mensagem || (resposta?.ok ? "Token removido." : "Não foi possível remover o token."); }); });
         const cartao = document.createElement("div"); cartao.className="cartao-personagem-container"; cartao.append(botao, remover); listaPersonagensSalvos.appendChild(cartao);
@@ -741,6 +755,24 @@ function iniciarArrastoObjeto(evento) {
     objetoX = alvoArrastado.offsetLeft; objetoY = alvoArrastado.offsetTop;
 }
 const areaVisualizacao = el("mapaVisualizacao");
+// Permite arrastar um personagem da bandeja e soltá-lo exatamente no ponto desejado do mapa.
+areaVisualizacao.addEventListener("dragover", evento => {
+    if (evento.dataTransfer?.types?.includes("application/x-rpg-token") || evento.dataTransfer?.types?.includes("text/plain")) {
+        evento.preventDefault();
+        evento.dataTransfer.dropEffect = "copy";
+    }
+});
+areaVisualizacao.addEventListener("drop", evento => {
+    const bibliotecaId = evento.dataTransfer?.getData("application/x-rpg-token") || evento.dataTransfer?.getData("text/plain");
+    if (!bibliotecaId) return;
+    evento.preventDefault();
+    evento.stopPropagation();
+    if (!estaEmUmaSala()) { mensagemSala.textContent = "Entre em uma sala para colocar personagens no mapa."; return; }
+    const ponto = coordenadaCenario(evento);
+    socket.emit("recolocar-token", { bibliotecaId, left: ponto.x - 26, top: ponto.y - 26 }, resposta => {
+        if (!resposta?.ok) mensagemSala.textContent = resposta?.mensagem || "Não foi possível colocar o token no mapa.";
+    });
+});
 areaVisualizacao.addEventListener("mousedown", evento => {
     if (modoDesenharParedes && evento.button === 0 && papelExibido.textContent === "Mestre") { evento.preventDefault(); evento.stopPropagation(); arrastando=false; alvoArrastado=null; inicioParedeAtual=coordenadaCenario(evento); fimParedeAtual=inicioParedeAtual; renderizarNevoa(); return; }
     if (modoPincelNevoa && evento.button === 0 && papelExibido.textContent === "Mestre") { evento.preventDefault(); evento.stopPropagation(); arrastando=false; alvoArrastado=null; desenhandoNevoa=true; marcasNevoaAtual=[]; registrarMarcaNevoa(evento); return; }
