@@ -272,9 +272,9 @@ async function enviarImagem(arquivo, tipo) {
     if (!estaEmUmaSala()) { mensagemSala.textContent = "Entre em uma sala primeiro."; return; }
     if (!arquivo) return;
     const permitidos = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-    const limite = tipo === "mapa" ? 4 * 1024 * 1024 : 300 * 1024;
+    const limite = tipo === "mapa" ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
     if (!permitidos.includes(arquivo.type)) { mensagemSala.textContent = "Escolha PNG, JPG, WEBP ou GIF."; return; }
-    if (arquivo.size > limite) { mensagemSala.textContent = tipo === "mapa" ? "A imagem deve ter no máximo 4 MB." : "O token deve ter no máximo 300 KB."; return; }
+    if (arquivo.size > limite) { mensagemSala.textContent = tipo === "mapa" ? "A imagem deve ter no máximo 4 MB." : "O token deve ter no máximo 2 MB."; return; }
     const nomeArquivo = arquivo.name.replace(/\.[^.]+$/, "").slice(0, 40) || (tipo === "token" ? "Personagem" : "Mapa");
     const parametros = new URLSearchParams({ tipo, nome: nomeArquivo });
     if (tipo === "mapa") {

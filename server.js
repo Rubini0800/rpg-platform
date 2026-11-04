@@ -15,7 +15,7 @@ const PORTA = Number(process.env.PORT) || 3000;            // o Render define PO
 const SALVAR_APOS_MS = 1500;                               // agrupa várias alterações em uma gravação
 const EVICAR_APOS_MS = 5 * 60 * 1000;                      // sala vazia sai da memória (continua no banco)
 const MAX_MAPA_BYTES = 4 * 1024 * 1024;
-const MAX_TOKEN_BYTES = 300 * 1024;
+const MAX_TOKEN_BYTES = 2 * 1024 * 1024;
 const MAX_OBJETOS_POR_SALA = 40;
 const MAX_TOKENS_BIBLIOTECA = 60;
 // Quantos proxies confiáveis ficam na frente do app (Render = 1). Usado só para identificar o IP no limitador.
@@ -227,7 +227,7 @@ app.post("/api/imagens", express.raw({ type: () => true, limit: MAX_MAPA_BYTES +
         const tipo = req.query.tipo === "mapa" ? "mapa" : "token";
         const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
         const maximo = tipo === "mapa" ? MAX_MAPA_BYTES : MAX_TOKEN_BYTES;
-        if (!buffer.length || buffer.length > maximo) return responder(400, tipo === "mapa" ? "Imagem inválida ou muito grande. Use PNG/JPG/WEBP/GIF de até 4 MB." : "Token inválido ou muito grande. Use PNG/JPG/WEBP/GIF de até 300 KB.");
+        if (!buffer.length || buffer.length > maximo) return responder(400, tipo === "mapa" ? "Imagem inválida ou muito grande. Use PNG/JPG/WEBP/GIF de até 4 MB." : "Token inválido ou muito grande. Use PNG/JPG/WEBP/GIF de até 2 MB.");
         const mime = detectarTipo(buffer);
         if (!mime) return responder(400, "O arquivo não é uma imagem PNG, JPG, WEBP ou GIF válida.");
         if (sala.objetos.length >= MAX_OBJETOS_POR_SALA) return responder(400, "Limite de 40 itens por sala.");
