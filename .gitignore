@@ -1,0 +1,8 @@
+node_modules/
+.env
+# Dados locais de desenvolvimento e o arquivo ANTIGO de campanhas (continha todos os códigos de sala)
+dados/
+uploads/
+campanhas-salvas.json
+chaves-do-mestre.txt
+*.log

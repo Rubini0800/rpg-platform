@@ -16,6 +16,7 @@ const tamanhoTokenFt = el("tamanhoTokenFt"), aplicarTamanhoToken = el("aplicarTa
 const diminuirTamanhoItem = el("diminuirTamanhoItem"), aumentarTamanhoItem = el("aumentarTamanhoItem");
 const nomeTokenSelecionado = el("nomeTokenSelecionado"), salvarNomeToken = el("salvarNomeToken");
 const listaPersonagensSalvos = el("listaPersonagensSalvos");
+const bibliotecaTokensPainel = el("bibliotecaTokensPainel");
 let bibliotecaTokens = [];
 let desenhos = [];
 let areasEfeito = [], modoAreaEfeito = false, areaEfeitoSelecionadaId = null;
@@ -311,15 +312,17 @@ function abrirPainelAtalho(tipo) {
     tipoPainelAtalho = tipo; painelAtalho.hidden = false;
     acaoSalvarTokenBiblioteca.hidden = tipo !== "token";
     acaoSalvarCampanha.hidden = tipo !== "salvar";
+    // A biblioteca fica dentro do painel do atalho de tokens, não mais abaixo do mapa.
+    bibliotecaTokensPainel.hidden = tipo !== "token" && tipo !== "montaria";
     if (tipo === "mapa") {
         tituloPainelAtalho.textContent = "Mapas"; acaoAtalhoPrincipal.textContent = "Escolher imagem do mapa";
         ajudaPainelAtalho.textContent = "Selecione uma imagem no seu computador para compartilhar com a sala.";
     } else if (tipo === "token") {
         tituloPainelAtalho.textContent = "Tokens"; acaoAtalhoPrincipal.textContent = "Adicionar token do computador";
-        ajudaPainelAtalho.textContent = "Tokens enviados são guardados automaticamente. Você também pode salvar um token já selecionado.";
+        ajudaPainelAtalho.textContent = "Tokens enviados ficam guardados na bandeja abaixo. Arraste um personagem da bandeja até o mapa para posicioná-lo.";
     } else if (tipo === "montaria") {
         tituloPainelAtalho.textContent = "Montarias e criaturas"; acaoAtalhoPrincipal.textContent = "Adicionar imagem de montaria/criatura";
-        ajudaPainelAtalho.textContent = "Escolha uma imagem PNG, JPG, WEBP ou GIF; ela será adicionada como token reutilizável.";
+        ajudaPainelAtalho.textContent = "Escolha uma imagem PNG, JPG, WEBP ou GIF. Ela ficará disponível na bandeja de tokens para você posicioná-la no mapa.";
     } else if (tipo === "salvar") {
         tituloPainelAtalho.textContent = "Salvar"; acaoAtalhoPrincipal.textContent = "Salvar campanha agora";
         ajudaPainelAtalho.textContent = "Salva o estado atual da sala no servidor.";
@@ -388,7 +391,7 @@ function criarElemento(dados) {
 function renderizarBibliotecaTokens() {
     if (!listaPersonagensSalvos) return;
     listaPersonagensSalvos.replaceChildren();
-    if (!bibliotecaTokens.length) { const vazio = document.createElement("p"); vazio.className = "ajuda"; vazio.textContent = "Nenhum personagem salvo ainda. Adicione um token para guardá-lo aqui."; listaPersonagensSalvos.appendChild(vazio); return; }
+    if (!bibliotecaTokens.length) { const vazio = document.createElement("p"); vazio.className = "ajuda"; vazio.textContent = "Nenhum token na bandeja ainda. Use Adicionar token do computador."; listaPersonagensSalvos.appendChild(vazio); return; }
     bibliotecaTokens.forEach(token => {
         const botao = document.createElement("button"); botao.type = "button"; botao.className = "cartao-personagem"; botao.title = `Arraste ${token.nome} até o mapa ou clique para adicionar no centro`; botao.draggable = true;
         const img = document.createElement("img"); definirOrigemImagem(img, token.url || token.dataUrl || ""); img.alt = token.nome;

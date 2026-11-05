@@ -92,6 +92,15 @@
                     <button id="acaoSalvarTokenBiblioteca" type="button" hidden>Salvar token selecionado na biblioteca</button>
                     <button id="acaoSalvarCampanha" type="button" hidden>Salvar campanha agora</button>
                     <p id="ajudaPainelAtalho" class="ajuda">Escolha uma opção.</p>
+                    <div id="bibliotecaTokensPainel" class="biblioteca-tokens-painel" hidden>
+                        <div class="biblioteca-tokens-cabecalho">
+                            <strong>Tokens na bandeja</strong>
+                            <span>Arraste um personagem daqui para o ponto desejado no mapa.</span>
+                        </div>
+                        <div id="listaPersonagensSalvos" class="lista-personagens">
+                            <p class="ajuda">Os tokens enviados aparecerão aqui.</p>
+                        </div>
+                    </div>
                 </div>
                 <button id="abrirMenuFerramentas" class="botao-ferramentas-flutuante" type="button">Ferramentas ▾</button>
                 <div id="menuFerramentasFoco" class="menu-ferramentas-foco" hidden>
@@ -116,10 +125,6 @@
                     <span id="resultadoAnimacao"></span>
                 </div>
             </div>
-            <section class="bandeja-personagens" aria-label="Personagens salvos">
-                <div class="bandeja-cabecalho"><h3>Personagens salvos</h3><span class="ajuda">Clique em um personagem para colocá-lo novamente no cenário.</span></div>
-                <div id="listaPersonagensSalvos" class="lista-personagens"><p class="ajuda">Os tokens que você adicionar aparecerão aqui para reutilização.</p></div>
-            </section>
         </section>
     </main>
     <script src="/socket.io/socket.io.js"></script>
